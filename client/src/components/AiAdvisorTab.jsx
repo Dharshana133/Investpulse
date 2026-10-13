@@ -86,16 +86,18 @@ export function AiAdvisorTab({ onSelectTicker, user, onRequireAuth }) {
   };
 
   return (
-    <div style={{
-      height: "100%",
-      display: "grid",
-      gridTemplateColumns: "380px 1fr",
-      gap: "0.6rem",
-      minHeight: 0,
-      overflow: "hidden"
-    }}>
+    <div
+      className="custom-scroll ai-advisor-responsive-grid"
+      style={{
+        height: "100%",
+        minHeight: 0,
+        overflowY: "auto",
+        paddingRight: "0.2rem",
+        paddingBottom: "1.5rem"
+      }}
+    >
       {/* Left Column: AI Query Control Center & 3D Brain */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem", minHeight: 0, height: "100%", overflow: "hidden" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem", minHeight: 0 }}>
         {/* Form Card */}
         <div className="glass-card card-3d-emboss" style={{ padding: "0.85rem 1rem", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.75rem" }}>
@@ -248,7 +250,7 @@ export function AiAdvisorTab({ onSelectTicker, user, onRequireAuth }) {
       </div>
 
       {/* Right Column: AI Insights & Recommendation Output */}
-      <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%", overflow: "hidden" }}>
+      <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
         {error && (
           <div style={{
             padding: "0.5rem 0.85rem",
