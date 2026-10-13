@@ -1,4 +1,4 @@
-# ⚡ Live Portfolio Tracker & AI Stock Analyst
+# ⚡ InvestPulse - Live NSE Stock Market & AI Portfolio Tracker
 
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi)
 ![React](https://img.shields.io/badge/Frontend-React_19-61DAFB?style=for-the-badge&logo=react)
