@@ -17,10 +17,26 @@ _DETAILS_CACHE: Dict[str, tuple] = {}
 _DETAILS_TTL_SECONDS = 300
 
 
+# Alias map for rebranded, demerged, or multi-class tickers
+TICKER_ALIASES = {
+    "TATAMOTORS": "TMCV.NS",
+    "TATAMOTOR": "TMCV.NS",
+    "TATA MOTORS": "TMCV.NS",
+    "TMCV": "TMCV.NS",
+    "TMPV": "TMPV.NS",
+    "M&M": "M&M.NS",
+    "BAJAJ-AUTO": "BAJAJ-AUTO.NS",
+    "L&T": "LT.NS",
+    "MCDOWELL-N": "UNITDSPR.NS",
+}
+
+
 def _yf_symbol(ticker: str) -> str:
-    """Format symbol for yfinance. US stocks (AAPL, TSLA, NVDA) stay as-is;
-    Indian tickers get the .NS suffix if not provided."""
+    """Format symbol for yfinance. US stocks stay as-is;
+    Indian tickers get the .NS suffix or resolve via alias."""
     ticker = ticker.upper().strip()
+    if ticker in TICKER_ALIASES:
+        return TICKER_ALIASES[ticker]
     if "." in ticker:
         return ticker
     # US Major stocks list
@@ -58,6 +74,34 @@ def _fetch_one(ticker: str) -> dict:
             if not hist.empty:
                 last_price = float(hist["Close"].iloc[-1])
                 prev_close = float(hist["Close"].iloc[-2]) if len(hist) > 1 else last_price
+        except Exception:
+            pass
+
+    # Fallback search if ticker symbol was changed or demerged
+    if last_price is None:
+        try:
+            results = yf.Search(ticker, max_results=3).quotes
+            for r in results:
+                alt = r.get("symbol")
+                if alt and alt != symbol:
+                    alt_stock = yf.Ticker(alt)
+                    try:
+                        fast = alt_stock.fast_info
+                        alt_lp = fast.get("lastPrice") or fast.get("last_price")
+                        alt_pc = fast.get("previousClose") or fast.get("previous_close")
+                    except Exception:
+                        alt_lp, alt_pc = None, None
+                    if alt_lp is None:
+                        alt_hist = alt_stock.history(period="2d")
+                        if not alt_hist.empty:
+                            alt_lp = float(alt_hist["Close"].iloc[-1])
+                            alt_pc = float(alt_hist["Close"].iloc[-2]) if len(alt_hist) > 1 else alt_lp
+                    if alt_lp is not None:
+                        symbol = alt
+                        stock = alt_stock
+                        last_price = alt_lp
+                        prev_close = alt_pc
+                        break
         except Exception:
             pass
 
@@ -163,6 +207,21 @@ def get_stock_history(
 
     try:
         hist = stock.history(period=yf_period, interval=interval)
+        if hist.empty:
+            try:
+                results = yf.Search(ticker, max_results=3).quotes
+                for r in results:
+                    alt = r.get("symbol")
+                    if alt and alt != symbol:
+                        alt_stock = yf.Ticker(alt)
+                        alt_hist = alt_stock.history(period=yf_period, interval=interval)
+                        if not alt_hist.empty:
+                            hist = alt_hist
+                            symbol = alt
+                            break
+            except Exception:
+                pass
+
         if hist.empty:
             raise HTTPException(status_code=404, detail="No history found")
 

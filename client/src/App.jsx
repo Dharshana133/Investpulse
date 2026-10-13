@@ -7,6 +7,8 @@ import { NseCatalogTab } from "./components/NseCatalogTab";
 import { PortfolioTab } from "./components/PortfolioTab";
 import { WatchlistTab } from "./components/WatchlistTab";
 import { AiAdvisorTab } from "./components/AiAdvisorTab";
+import { ThreeDBackground } from "./components/ThreeDBackground";
+import { Activity, Boxes } from "lucide-react";
 import "./App.css";
 
 export default function App() {
@@ -52,17 +54,27 @@ export default function App() {
   if (initializing) {
     return (
       <div style={{
-        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+        height: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
         flexDirection: "column", gap: "1rem", color: "var(--text-muted)"
       }}>
         <div className="spinner" style={{ width: "40px", height: "40px" }} />
-        <p style={{ fontWeight: 600 }}>Initializing InvestPulse...</p>
+        <p style={{ fontWeight: 600 }}>Initializing InvestPulse 3D Studio...</p>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{
+      height: "100vh",
+      maxHeight: "100vh",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+      position: "relative"
+    }}>
+      {/* 3D Ambient Spatial Background */}
+      <ThreeDBackground />
+
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
@@ -73,12 +85,19 @@ export default function App() {
         onSearchStock={handleSelectTicker}
       />
 
-      {/* Main Tab Body Container */}
+      {/* Main Single-Page Tab Body Container */}
       <main style={{
-        maxWidth: "1280px",
-        width: "calc(100% - 2rem)",
-        margin: "0 auto 3rem auto",
-        flex: 1
+        maxWidth: "1440px",
+        width: "calc(100% - 1.5rem)",
+        margin: "0 auto",
+        flex: 1,
+        minHeight: 0,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+        zIndex: 1,
+        paddingBottom: "0.35rem"
       }}>
         {activeTab === "explorer" && (
           <StockExplorer
@@ -121,22 +140,36 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
+      {/* Sleek 3D Bottom Status Bar */}
       <footer style={{
+        flexShrink: 0,
+        height: "28px",
         borderTop: "1px solid var(--bg-card-border)",
-        background: "rgba(9, 13, 22, 0.9)",
-        padding: "2rem 1rem",
-        textAlign: "center",
+        background: "rgba(9, 13, 22, 0.85)",
+        backdropFilter: "blur(12px)",
+        padding: "0 1.25rem",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
         color: "var(--text-dim)",
-        fontSize: "0.85rem"
+        fontSize: "0.74rem",
+        zIndex: 50,
+        userSelect: "none"
       }}>
-        <div style={{ maxWidth: "1280px", margin: "0 auto", display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "1rem" }}>
-          <div>
-            <strong style={{ color: "#fff" }}>InvestPulse Platform</strong> • Real-Time Stock Analytics & Portfolio Tracker
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", color: "var(--gain)" }}>
+            <Activity size={12} color="var(--gain)" className="icon-glow-gain" />
+            <span style={{ fontWeight: 600 }}>LIVE MARKET FEED</span>
           </div>
-          <div>
-            Powered by <strong>yfinance API</strong> & Fast-Cache Engine • 842+ NSE Listed Stocks
-          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+          <span style={{ color: "var(--accent-cyan)", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.35rem" }}>
+            <Boxes size={12} color="var(--accent-cyan)" className="icon-glow-cyan" />
+            <span>3D OBJECT ENGINE ACTIVE</span>
+          </span>
+          <span>•</span>
+          <span>InvestPulse Cockpit</span>
         </div>
       </footer>
 

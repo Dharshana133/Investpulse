@@ -96,7 +96,7 @@ def analyze_stock_endpoint(payload: AnalyzeRequest):
     # 3. Determine Verdict & Recommendation
     if score >= 75:
         verdict = "BULLISH BUY CONSIDERATION"
-        verdict_color = "var(--gain)"
+        verdict_color = "#10b981"
         recommendation_summary = (
             f"{company_name} ({ticker}) displays strong fundamental indicators. "
             f"Favorable valuation metrics and solid price positioning present a attractive buying opportunity."
