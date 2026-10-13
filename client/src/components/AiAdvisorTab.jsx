@@ -55,7 +55,7 @@ export function AiAdvisorTab({ onSelectTicker, user, onRequireAuth }) {
       } else if (Array.isArray(err.response?.data?.detail)) {
         msg = err.response.data.detail.map((d) => d.msg || JSON.stringify(d)).join(", ");
       } else if (err.message?.includes("Network Error") || err.code === "ERR_NETWORK") {
-        msg = "Unable to connect to the backend server. Please verify FastAPI is running at http://127.0.0.1:8000.";
+        msg = "Connecting to the server... The backend may still be waking up. Please retry in a few seconds.";
       } else if (err.message) {
         msg = err.message;
       }
