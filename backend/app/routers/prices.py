@@ -1,5 +1,6 @@
 import time
 from typing import Dict, List, Optional
+import requests
 
 import yfinance as yf
 from fastapi import APIRouter, HTTPException, Query
@@ -105,6 +106,20 @@ def _fetch_one(ticker: str) -> dict:
         except Exception:
             pass
 
+    # Direct Yahoo v8 chart fallback (unblocked on cloud datacenters)
+    if last_price is None:
+        try:
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=2d"
+            resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=6)
+            if resp.status_code == 200:
+                data_json = resp.json().get("chart", {}).get("result", [])
+                if data_json and "meta" in data_json[0]:
+                    meta = data_json[0]["meta"]
+                    last_price = meta.get("regularMarketPrice")
+                    prev_close = meta.get("chartPreviousClose") or last_price
+        except Exception:
+            pass
+
     if last_price is None:
         raise HTTPException(status_code=404, detail=f"Price data not found for '{ticker}'")
 
@@ -153,6 +168,31 @@ def get_stock_details(ticker: str):
         info = stock.info or {}
     except Exception:
         info = {}
+
+    # If stock.info was incomplete or blocked by Yahoo on cloud IPs, enrich from Yahoo v8 chart meta
+    try:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=2d"
+        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=6)
+        if resp.status_code == 200:
+            res_json = resp.json().get("chart", {}).get("result", [])
+            if res_json and "meta" in res_json[0]:
+                meta = res_json[0]["meta"]
+                if not info.get("longName"):
+                    info["longName"] = meta.get("longName") or meta.get("shortName")
+                if not info.get("fiftyTwoWeekHigh"):
+                    info["fiftyTwoWeekHigh"] = meta.get("fiftyTwoWeekHigh")
+                if not info.get("fiftyTwoWeekLow"):
+                    info["fiftyTwoWeekLow"] = meta.get("fiftyTwoWeekLow")
+                if not info.get("dayHigh"):
+                    info["dayHigh"] = meta.get("regularMarketDayHigh")
+                if not info.get("dayLow"):
+                    info["dayLow"] = meta.get("regularMarketDayLow")
+                if not info.get("volume"):
+                    info["volume"] = meta.get("regularMarketVolume")
+                if not info.get("currency"):
+                    info["currency"] = meta.get("currency")
+    except Exception:
+        pass
 
     # Extract info fields safely
     details = {
@@ -222,22 +262,59 @@ def get_stock_history(
             except Exception:
                 pass
 
-        if hist.empty:
-            raise HTTPException(status_code=404, detail="No history found")
+        if not hist.empty:
+            points = []
+            for index, row in hist.iterrows():
+                time_str = index.strftime("%b %d" if period in ["1m", "6m", "1y"] else "%H:%M")
+                points.append({
+                    "date": time_str,
+                    "timestamp": int(index.timestamp()),
+                    "open": round(float(row["Open"]), 2),
+                    "high": round(float(row["High"]), 2),
+                    "low": round(float(row["Low"]), 2),
+                    "close": round(float(row["Close"]), 2),
+                    "volume": int(row["Volume"]) if "Volume" in row else 0,
+                })
+            return {"ticker": ticker.upper(), "period": period, "history": points}
 
-        points = []
-        for index, row in hist.iterrows():
-            time_str = index.strftime("%b %d" if period in ["1m", "6m", "1y"] else "%H:%M")
-            points.append({
-                "date": time_str,
-                "timestamp": int(index.timestamp()),
-                "open": round(float(row["Open"]), 2),
-                "high": round(float(row["High"]), 2),
-                "low": round(float(row["Low"]), 2),
-                "close": round(float(row["Close"]), 2),
-                "volume": int(row["Volume"]) if "Volume" in row else 0,
-            })
-        return {"ticker": ticker.upper(), "period": period, "history": points}
+        # Yahoo v8 chart fallback for history
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval={interval}&range={yf_period}"
+        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=6)
+        if resp.status_code == 200:
+            res_json = resp.json().get("chart", {}).get("result", [])
+            if res_json and "timestamp" in res_json[0]:
+                timestamps = res_json[0]["timestamp"]
+                quotes = res_json[0].get("indicators", {}).get("quote", [{}])[0]
+                opens = quotes.get("open", [])
+                highs = quotes.get("high", [])
+                lows = quotes.get("low", [])
+                closes = quotes.get("close", [])
+                volumes = quotes.get("volume", [])
+                import datetime
+                points = []
+                for i in range(len(timestamps)):
+                    c = closes[i] if i < len(closes) else None
+                    if c is None:
+                        continue
+                    dt = datetime.datetime.fromtimestamp(timestamps[i])
+                    time_str = dt.strftime("%b %d" if period in ["1m", "6m", "1y"] else "%H:%M")
+                    o = opens[i] if i < len(opens) and opens[i] is not None else c
+                    h = highs[i] if i < len(highs) and highs[i] is not None else c
+                    l = lows[i] if i < len(lows) and lows[i] is not None else c
+                    v = volumes[i] if i < len(volumes) and volumes[i] is not None else 0
+                    points.append({
+                        "date": time_str,
+                        "timestamp": int(timestamps[i]),
+                        "open": round(float(o), 2),
+                        "high": round(float(h), 2),
+                        "low": round(float(l), 2),
+                        "close": round(float(c), 2),
+                        "volume": int(v),
+                    })
+                if points:
+                    return {"ticker": ticker.upper(), "period": period, "history": points}
+
+        raise HTTPException(status_code=404, detail="No history found")
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch history: {str(e)}")
 
