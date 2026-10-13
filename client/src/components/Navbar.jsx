@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Zap,
+  Home,
   LineChart,
   BrainCircuit,
   Compass,
@@ -24,6 +25,7 @@ export function Navbar({ activeTab, setActiveTab, user, onOpenAuth, onLogout, on
   };
 
   const navTabs = [
+    { id: "home", label: "Home", Icon: Home },
     { id: "explorer", label: "Stock Explorer", Icon: LineChart },
     { id: "ai_advisor", label: "AI Advisor", Icon: BrainCircuit },
     { id: "nse_catalog", label: "NSE 840+ Catalog", Icon: Compass },
@@ -48,7 +50,7 @@ export function Navbar({ activeTab, setActiveTab, user, onOpenAuth, onLogout, on
     }}>
       {/* Brand Logo */}
       <div 
-        onClick={() => setActiveTab("explorer")}
+        onClick={() => setActiveTab("home")}
         style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "0.6rem" }}
       >
         <div style={{

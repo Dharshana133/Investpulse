@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { authService } from "./services/api";
 import { Navbar } from "./components/Navbar";
 import { AuthModal } from "./components/AuthModal";
+import { HomeTab } from "./components/HomeTab";
 import { StockExplorer } from "./components/StockExplorer";
 import { NseCatalogTab } from "./components/NseCatalogTab";
 import { PortfolioTab } from "./components/PortfolioTab";
@@ -14,7 +15,7 @@ import "./App.css";
 export default function App() {
   const [user, setUser] = useState(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("explorer");
+  const [activeTab, setActiveTab] = useState("home");
   const [selectedTicker, setSelectedTicker] = useState("RELIANCE");
   const [initializing, setInitializing] = useState(true);
 
@@ -99,6 +100,17 @@ export default function App() {
         zIndex: 1,
         paddingBottom: "0.35rem"
       }}>
+        {activeTab === "home" && (
+          <HomeTab
+            onNavigate={(tab, sym) => {
+              if (sym) setSelectedTicker(sym);
+              setActiveTab(tab);
+            }}
+            user={user}
+            onRequireAuth={() => setAuthModalOpen(true)}
+          />
+        )}
+
         {activeTab === "explorer" && (
           <StockExplorer
             initialTicker={selectedTicker}
